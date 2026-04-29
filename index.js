@@ -1,5 +1,6 @@
 const { Client, GatewayIntentBits, Partials, EmbedBuilder } = require('discord.js');
 const cron = require('node-cron');
+require('dotenv').config();
 
 const client = new Client({
     intents: [
@@ -12,7 +13,7 @@ const client = new Client({
     partials: [Partials.Message, Partials.Reaction, Partials.User],
 });
 
-const TOKEN = 'MTExMDc4MzEzNjgyMTk0NDQyMQ.GE8gwv.O-GdUoP2gRbR5XvSF4rItrOH78vuslQQZEzOlI';
+const TOKEN = process.env.DISCORD_TOKEN;
 const ID_CARGOS_PARA_MARCAR = ['ID_DO_CARGO_AQUI']; 
 const NOME_CARGO_STAFF = 'Staff'; // Nome exato do cargo no seu servidor
 

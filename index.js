@@ -14,8 +14,11 @@ const client = new Client({
 });
 
 const TOKEN = process.env.DISCORD_TOKEN;
-const ID_CARGOS_PARA_MARCAR = ['ID_DO_CARGO_AQUI']; 
-const NOME_CARGO_STAFF = 'Staff'; // Nome exato do cargo no seu servidor
+const ID_CARGOS_PARA_MARCAR = ['843522912752238682', '1495958490244579509']; 
+const NOME_CARGO_STAFF = 'Staff'; 
+
+// --- CONFIGURAÇÃO DE CANAL ---
+const ID_CANAL_LIMPEZA = '1499097800665727140'; // COLOQUE AQUI O ID DO CANAL QUE DEVE SER LIMPO
 
 const CONFIGS = {
     '1': {
@@ -35,13 +38,12 @@ const CONFIGS = {
 let msgQuadroAtiva = null;
 let agendamentoAtivo = null;
 
-// Função centralizada de verificação de Staff
 const verificarAcesso = (member) => {
     return member.permissions.has('Administrator') || member.roles.cache.some(r => r.name === NOME_CARGO_STAFF);
 };
 
 client.once('ready', () => {
-    console.log(`Bot da Guild Online! Apenas o cargo "${NOME_CARGO_STAFF}" pode usar comandos.`);
+    console.log(`Bot da Guild Online! Limpeza automática ativa apenas no canal: ${ID_CANAL_LIMPEZA}`);
 
     cron.schedule('0 22 * * *', async () => {
         if (msgQuadroAtiva && agendamentoAtivo) {
@@ -66,14 +68,19 @@ async function executarReset(opcao) {
 }
 
 client.on('messageCreate', async (message) => {
+    // 1. Ignorar se a mensagem for em qualquer canal que NÃO seja o de limpeza configurado
+    if (message.channel.id !== ID_CANAL_LIMPEZA) return;
+
+    // 2. Lógica para mensagens de BOT no canal configurado
     if (message.author.bot) {
+        // Se for o bot, mas não for a mensagem do Quadro, apaga em 1 minuto
         if (msgQuadroAtiva && message.id !== msgQuadroAtiva.id) {
             setTimeout(() => message.delete().catch(() => {}), 60000);
         }
         return;
     }
 
-    // Auto-delete de 1 minuto para manter o canal limpo
+    // 3. Auto-delete de mensagens de usuários apenas no canal configurado
     setTimeout(() => message.delete().catch(() => {}), 60000);
 
     const args = message.content.split(' ');
@@ -81,10 +88,10 @@ client.on('messageCreate', async (message) => {
     const subComando = args[1];
     const listaComandos = ['!quadro', '!reset', '!agendar', '!clean'];
 
-    // --- FILTRO DE SEGURANÇA: BLOQUEIA TUDO SE NÃO FOR STAFF ---
+    // Filtro de Staff
     if (listaComandos.includes(comando)) {
         if (!verificarAcesso(message.member)) {
-            const erro = await message.reply(`❌ Erro: Apenas usuários com o cargo **${NOME_CARGO_STAFF}** podem gerenciar o quadro.`);
+            const erro = await message.reply(`❌ Erro: Apenas a Staff pode usar comandos.`);
             return setTimeout(() => erro.delete().catch(() => {}), 5000);
         }
     }
@@ -128,7 +135,8 @@ client.on('messageCreate', async (message) => {
 
     if (comando === '!agendar' && CONFIGS[subComando]) {
         agendamentoAtivo = subComando;
-        message.reply(`✅ Agendado: Reset das 22h será a **Opção ${subComando}**.`);
+        const resp = await message.reply(`✅ Agendado: Reset das 22h será a **Opção ${subComando}**.`);
+        setTimeout(() => resp.delete().catch(() => {}), 10000);
     }
 
     if (comando === '!reset' && CONFIGS[subComando]) {
